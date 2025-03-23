@@ -31,12 +31,16 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input[type="text"], input[type="file"], input[type="number"] {
+        input[type="text"], input[type="file"], input[type="number"], textarea {
             width: 100%;
             padding: 8px;
             box-sizing: border-box;
             border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
         }
         button {
             background-color: #4CAF50;
@@ -83,6 +87,7 @@
             margin-top: 10px;
             font-size: 14px;
             color: #333;
+            white-space: pre-line;
         }
         .preview-container {
             display: flex;
@@ -125,7 +130,7 @@
 
     <div class="form-group">
         <label for="bottom-text">底部文字 (可选):</label>
-        <input type="text" id="bottom-text" placeholder="长按识别二维码">
+        <textarea id="bottom-text" placeholder="长按识别二维码"></textarea>
     </div>
 
     <div class="form-group">
@@ -207,7 +212,7 @@
             centerIcon.style.display = 'block';
         }
 
-        // Add text
+        // Add text with line breaks preserved
         if (text) {
             textContainer.textContent = text;
         } else {
@@ -226,7 +231,11 @@
         const size = parseInt(document.getElementById('size').value);
         const text = document.getElementById('bottom-text').value;
         const finalCanvas = document.getElementById('final-qrcode');
-        const textHeight = text ? 30 : 0;
+        
+        // Calculate text height based on number of lines
+        const textLines = text ? text.split('\n') : [];
+        const lineHeight = 20;
+        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 10) : 0;
 
         finalCanvas.width = size;
         finalCanvas.height = size + textHeight;
@@ -256,12 +265,15 @@
                 ctx.drawImage(iconPreview, centerX, centerY, logoSize, logoSize);
             }
 
-            // Draw text
+            // Draw multiline text
             if (text) {
                 ctx.fillStyle = 'black';
                 ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(text, size/2, size + 20);
+                
+                textLines.forEach((line, index) => {
+                    ctx.fillText(line, size/2, size + (index * lineHeight) + 20);
+                });
             }
         }
     }
