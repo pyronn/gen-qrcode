@@ -85,7 +85,6 @@
         #qrcode-text {
             text-align: center;
             margin-top: 10px;
-            font-size: 14px;
             color: #333;
             white-space: pre-line;
         }
@@ -134,6 +133,11 @@
     </div>
 
     <div class="form-group">
+        <label for="text-size">文字大小:</label>
+        <input type="number" id="text-size" min="1" value="14">
+    </div>
+
+    <div class="form-group">
         <label for="size">二维码尺寸:</label>
         <input type="number" id="size" min="100" max="500" value="256">
     </div>
@@ -177,6 +181,7 @@
         const url = document.getElementById('url').value;
         const size = parseInt(document.getElementById('size').value);
         const text = document.getElementById('bottom-text').value;
+        const textSize = parseInt(document.getElementById('text-size').value);
         const qrcodeContainer = document.getElementById('qrcode');
         const qrcodeDisplay = document.getElementById('qrcode-display');
         const textContainer = document.getElementById('qrcode-text');
@@ -212,9 +217,10 @@
             centerIcon.style.display = 'block';
         }
 
-        // Add text with line breaks preserved
+        // Add text with line breaks preserved and update text size
         if (text) {
             textContainer.textContent = text;
+            textContainer.style.fontSize = `${textSize}px`;
         } else {
             textContainer.textContent = '';
         }
@@ -230,15 +236,19 @@
     function combineQRAndIcon() {
         const size = parseInt(document.getElementById('size').value);
         const text = document.getElementById('bottom-text').value;
+        const textSize = parseInt(document.getElementById('text-size').value);
+        const padding = 40; // 设置四周白边大小
+        const textQrSpacing = 50; // 设置文字和二维码之间的间距
         const finalCanvas = document.getElementById('final-qrcode');
         
         // Calculate text height based on number of lines
         const textLines = text ? text.split('\n') : [];
-        const lineHeight = 20;
-        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 10) : 0;
+        const lineHeight = Math.floor(textSize * 1.5); // 行高为字体大小的1.5倍
+        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 40) : 0; // 增加文字区域的上下间距
 
-        finalCanvas.width = size;
-        finalCanvas.height = size + textHeight;
+        // Set canvas size including padding
+        finalCanvas.width = size + (padding * 2);
+        finalCanvas.height = size + textHeight + (padding * 2) + textQrSpacing; // 添加文字和二维码之间的间距
 
         const ctx = finalCanvas.getContext('2d');
 
@@ -246,16 +256,16 @@
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-        // Draw QR code
+        // Draw QR code with padding
         const qrImg = document.querySelector('#qrcode img');
         if (qrImg) {
-            ctx.drawImage(qrImg, 0, 0, size, size);
+            ctx.drawImage(qrImg, padding, padding, size, size);
 
             // Draw center icon if exists
             if (iconInput.files && iconInput.files[0]) {
                 const logoSize = Math.floor(size * 0.2);
-                const centerX = size / 2 - logoSize / 2;
-                const centerY = size / 2 - logoSize / 2;
+                const centerX = padding + size / 2 - logoSize / 2;
+                const centerY = padding + size / 2 - logoSize / 2;
 
                 // Draw white background for icon
                 ctx.fillStyle = 'white';
@@ -265,14 +275,30 @@
                 ctx.drawImage(iconPreview, centerX, centerY, logoSize, logoSize);
             }
 
-            // Draw multiline text
+            // Draw multiline text with white background
             if (text) {
-                ctx.fillStyle = 'black';
-                ctx.font = '14px Arial';
+                ctx.font = `${textSize}px Arial`;
                 ctx.textAlign = 'center';
                 
+                // Calculate text background dimensions
+                const maxTextWidth = textLines.reduce((max, line) => {
+                    const width = ctx.measureText(line).width;
+                    return width > max ? width : max;
+                }, 0);
+                const textBackgroundWidth = maxTextWidth + 40; // 文字背景左右各加20px padding
+                const textBackgroundHeight = textLines.length * lineHeight + 40; // 文字背景上下各加20px padding
+                const textBackgroundX = (finalCanvas.width - textBackgroundWidth) / 2;
+                const textBackgroundY = size + padding + textQrSpacing; // 使用新的间距值
+
+                // Draw text background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(textBackgroundX, textBackgroundY, textBackgroundWidth, textBackgroundHeight);
+
+                // Draw text lines
+                ctx.fillStyle = 'black';
                 textLines.forEach((line, index) => {
-                    ctx.fillText(line, size/2, size + (index * lineHeight) + 20);
+                    const y = textBackgroundY + 25 + (index * lineHeight);
+                    ctx.fillText(line, finalCanvas.width / 2, y);
                 });
             }
         }
