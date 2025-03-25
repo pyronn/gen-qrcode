@@ -237,18 +237,18 @@
         const size = parseInt(document.getElementById('size').value);
         const text = document.getElementById('bottom-text').value;
         const textSize = parseInt(document.getElementById('text-size').value);
-        const padding = 40; // 设置四周白边大小
+        const padding = 40; // 设置白边大小
         const textQrSpacing = 50; // 设置文字和二维码之间的间距
         const finalCanvas = document.getElementById('final-qrcode');
         
         // Calculate text height based on number of lines
         const textLines = text ? text.split('\n') : [];
         const lineHeight = Math.floor(textSize * 1.5); // 行高为字体大小的1.5倍
-        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 40) : 0; // 增加文字区域的上下间距
+        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 20) : 0; // 文字区域上方保留10px边距
 
-        // Set canvas size including padding
+        // Set canvas size including padding (only top, left, right)
         finalCanvas.width = size + (padding * 2);
-        finalCanvas.height = size + textHeight + (padding * 2) + textQrSpacing; // 添加文字和二维码之间的间距
+        finalCanvas.height = size + textHeight + padding + textQrSpacing; // 只添加顶部padding
 
         const ctx = finalCanvas.getContext('2d');
 
@@ -286,9 +286,9 @@
                     return width > max ? width : max;
                 }, 0);
                 const textBackgroundWidth = maxTextWidth + 40; // 文字背景左右各加20px padding
-                const textBackgroundHeight = textLines.length * lineHeight + 40; // 文字背景上下各加20px padding
+                const textBackgroundHeight = textLines.length * lineHeight + 20; // 文字背景上方保留10px边距
                 const textBackgroundX = (finalCanvas.width - textBackgroundWidth) / 2;
-                const textBackgroundY = size + padding + textQrSpacing; // 使用新的间距值
+                const textBackgroundY = size + padding + textQrSpacing;
 
                 // Draw text background
                 ctx.fillStyle = 'white';
@@ -297,7 +297,7 @@
                 // Draw text lines
                 ctx.fillStyle = 'black';
                 textLines.forEach((line, index) => {
-                    const y = textBackgroundY + 25 + (index * lineHeight);
+                    const y = textBackgroundY + 15 + (index * lineHeight); // 文字顶部间距减小到15px
                     ctx.fillText(line, finalCanvas.width / 2, y);
                 });
             }
