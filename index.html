@@ -109,6 +109,70 @@
         #final-qrcode {
             display: none;
         }
+        
+        /* 缓存图标样式 */
+        #cached-icons-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        #cached-icons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .cached-icon-item {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #f9f9f9;
+        }
+        
+        .cached-icon-item:hover {
+            border-color: #4CAF50;
+            transform: scale(1.05);
+        }
+        
+        .cached-icon-item.selected {
+            border-color: #4CAF50;
+            background-color: #e8f5e8;
+        }
+        
+        .cached-icon-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .cached-icon-delete {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cached-icon-delete:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
@@ -124,6 +188,14 @@
         <input type="file" id="icon" accept="image/*">
         <div class="preview-container">
             <img id="icon-preview" src="" alt="Icon Preview">
+        </div>
+        
+        <!-- 缓存图标区域 -->
+        <div id="cached-icons-section" style="display: none;">
+            <label>已保存的图标:</label>
+            <div id="cached-icons-container">
+                <!-- 缓存的图标将在这里显示 -->
+            </div>
         </div>
     </div>
 
@@ -160,7 +232,10 @@
     const iconInput = document.getElementById('icon');
     const iconPreview = document.getElementById('icon-preview');
     const centerIcon = document.getElementById('center-icon');
+    const cachedIconsSection = document.getElementById('cached-icons-section');
+    const cachedIconsContainer = document.getElementById('cached-icons-container');
     let qrcode = null;
+    let selectedIconData = null; // 存储当前选中的图标数据
 
     // Preview uploaded icon
     iconInput.addEventListener('change', function() {
@@ -168,9 +243,13 @@
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                iconPreview.src = e.target.result;
+                selectedIconData = e.target.result;
+                iconPreview.src = selectedIconData;
                 iconPreview.style.display = 'block';
-                centerIcon.src = e.target.result;
+                centerIcon.src = selectedIconData;
+                
+                // 保存图标到缓存
+                saveIconToCache(selectedIconData, file.name);
             }
             reader.readAsDataURL(file);
         }
@@ -208,8 +287,8 @@
             correctLevel: QRCode.CorrectLevel.H // High error correction for logo space
         });
 
-        // Show center icon if uploaded
-        if (iconInput.files && iconInput.files[0]) {
+        // Show center icon if uploaded or selected from cache
+        if ((iconInput.files && iconInput.files[0]) || selectedIconData) {
             // Set size for center icon (20% of QR code)
             const logoSize = Math.floor(size * 0.2);
             centerIcon.style.width = logoSize + 'px';
@@ -262,7 +341,7 @@
             ctx.drawImage(qrImg, padding, padding, size, size);
 
             // Draw center icon if exists
-            if (iconInput.files && iconInput.files[0]) {
+            if ((iconInput.files && iconInput.files[0]) || selectedIconData) {
                 const logoSize = Math.floor(size * 0.2);
                 const centerX = padding + size / 2 - logoSize / 2;
                 const centerY = padding + size / 2 - logoSize / 2;
@@ -314,6 +393,144 @@
         link.href = finalCanvas.toDataURL('image/png');
         link.click();
     }
+
+    // 图标缓存管理功能
+    
+    // 保存图标到localStorage
+    function saveIconToCache(iconData, fileName) {
+        try {
+            let cachedIcons = JSON.parse(localStorage.getItem('qrcode-cached-icons') || '[]');
+            
+            // 检查是否已存在相同的图标（避免重复）
+            const exists = cachedIcons.some(icon => icon.data === iconData);
+            if (!exists) {
+                // 生成唯一ID
+                const iconId = Date.now().toString();
+                
+                // 添加新图标
+                cachedIcons.push({
+                    id: iconId,
+                    data: iconData,
+                    name: fileName || `图标${iconId}`,
+                    timestamp: Date.now()
+                });
+                
+                // 限制缓存数量（最多保存20个图标）
+                if (cachedIcons.length > 20) {
+                    cachedIcons = cachedIcons.slice(-20);
+                }
+                
+                localStorage.setItem('qrcode-cached-icons', JSON.stringify(cachedIcons));
+                displayCachedIcons();
+            }
+        } catch (error) {
+            console.error('保存图标失败:', error);
+        }
+    }
+    
+    // 加载并显示缓存的图标
+    function displayCachedIcons() {
+        try {
+            const cachedIcons = JSON.parse(localStorage.getItem('qrcode-cached-icons') || '[]');
+            cachedIconsContainer.innerHTML = '';
+            
+            if (cachedIcons.length > 0) {
+                cachedIconsSection.style.display = 'block';
+                
+                cachedIcons.forEach(icon => {
+                    const iconElement = createCachedIconElement(icon);
+                    cachedIconsContainer.appendChild(iconElement);
+                });
+            } else {
+                cachedIconsSection.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('加载缓存图标失败:', error);
+        }
+    }
+    
+    // 创建缓存图标元素
+    function createCachedIconElement(icon) {
+        const iconItem = document.createElement('div');
+        iconItem.className = 'cached-icon-item';
+        iconItem.title = icon.name;
+        
+        const img = document.createElement('img');
+        img.src = icon.data;
+        img.alt = icon.name;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'cached-icon-delete';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.title = '删除此图标';
+        
+        // 点击选择图标
+        iconItem.addEventListener('click', function(e) {
+            if (e.target === deleteBtn) return; // 防止删除按钮触发选择
+            
+            selectCachedIcon(icon, iconItem);
+        });
+        
+        // 点击删除图标
+        deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (confirm('确定要删除这个图标吗？')) {
+                deleteCachedIcon(icon.id);
+            }
+        });
+        
+        iconItem.appendChild(img);
+        iconItem.appendChild(deleteBtn);
+        
+        return iconItem;
+    }
+    
+    // 选择缓存的图标
+    function selectCachedIcon(icon, iconElement) {
+        // 清除所有选中状态
+        document.querySelectorAll('.cached-icon-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // 设置当前选中状态
+        iconElement.classList.add('selected');
+        
+        // 更新预览和选中数据
+        selectedIconData = icon.data;
+        iconPreview.src = selectedIconData;
+        iconPreview.style.display = 'block';
+        centerIcon.src = selectedIconData;
+        
+        // 清空文件input
+        iconInput.value = '';
+    }
+    
+    // 删除缓存的图标
+    function deleteCachedIcon(iconId) {
+        try {
+            let cachedIcons = JSON.parse(localStorage.getItem('qrcode-cached-icons') || '[]');
+            cachedIcons = cachedIcons.filter(icon => icon.id !== iconId);
+            localStorage.setItem('qrcode-cached-icons', JSON.stringify(cachedIcons));
+            displayCachedIcons();
+            
+            // 如果删除的是当前选中的图标，清空选择
+            if (selectedIconData && document.querySelector('.cached-icon-item.selected')) {
+                const selectedIcon = document.querySelector('.cached-icon-item.selected');
+                if (!selectedIcon) {
+                    selectedIconData = null;
+                    iconPreview.style.display = 'none';
+                    centerIcon.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('删除图标失败:', error);
+        }
+    }
+    
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        displayCachedIcons();
+    });
 </script>
 </body>
 </html>
