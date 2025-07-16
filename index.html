@@ -374,7 +374,10 @@
         <input type="number" id="size" min="100" max="500" value="256">
     </div>
 
-    <button onclick="generateQR()">生成二维码</button>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button onclick="generateQR()">生成二维码</button>
+        <button class="download-btn" onclick="downloadQR()" style="margin-top: 0;">下载二维码</button>
+    </div>
 
     <div id="qrcode-container">
         <div id="qrcode-display">
@@ -385,7 +388,6 @@
         <canvas id="final-qrcode"></canvas>
     </div>
 
-        <button class="download-btn" onclick="downloadQR()">下载二维码</button>
     </div>
     
     <!-- Batch generation tab -->
@@ -426,13 +428,15 @@
             <input type="number" id="batch-size" min="100" max="500" value="256">
         </div>
         
-        <button onclick="generateBatchQR()">批量生成二维码</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="generateBatchQR()">批量生成二维码</button>
+            <button class="download-btn batch-download-all" onclick="downloadAllBatchQR()" style="margin-top: 0; display: none;">下载所有二维码</button>
+        </div>
         
         <div id="batch-results" class="batch-results">
             <!-- 批量生成的二维码将显示在这里 -->
         </div>
         
-        <button class="download-btn batch-download-all" onclick="downloadAllBatchQR()" style="display: none;">下载所有二维码</button>
     </div>
 </div>
 
