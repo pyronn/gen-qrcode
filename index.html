@@ -173,12 +173,172 @@
         .cached-icon-delete:hover {
             background-color: #cc0000;
         }
+        
+        /* Tab styles */
+        .tab-container {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Batch generation styles */
+        .batch-links-input {
+            min-height: 120px;
+            font-family: monospace;
+        }
+        
+        .batch-icons-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        .batch-icon-item {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .batch-icon-item:hover {
+            border-color: #4CAF50;
+            transform: scale(1.05);
+        }
+        
+        .batch-icon-item.selected {
+            border-color: #4CAF50;
+            background-color: #e8f5e8;
+        }
+        
+        .batch-icon-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .batch-icon-order {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .batch-results {
+            margin-top: 20px;
+        }
+        
+        .batch-qr-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .batch-qr-display {
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .batch-qr-info {
+            flex: 1;
+        }
+        
+        .batch-qr-link {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        
+        .batch-download-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .batch-download-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .batch-download-all {
+            background-color: #ff9800;
+            margin-top: 20px;
+        }
+        
+        .batch-download-all:hover {
+            background-color: #f57c00;
+        }
     </style>
 </head>
 <body>
 <h1>QR Code Generator</h1>
 <div class="container">
-    <div class="form-group">
+    <div class="tab-container">
+        <button class="tab-button active" onclick="switchTab('single')">单个生成</button>
+        <button class="tab-button" onclick="switchTab('batch')">批量生成</button>
+    </div>
+    
+    <!-- Single generation tab -->
+    <div id="single-tab" class="tab-content active">
+        <div class="form-group">
         <label for="url">输入网址或文本:</label>
         <input type="text" id="url" placeholder="https://example.com" required>
     </div>
@@ -225,7 +385,55 @@
         <canvas id="final-qrcode"></canvas>
     </div>
 
-    <button class="download-btn" onclick="downloadQR()">下载二维码</button>
+        <button class="download-btn" onclick="downloadQR()">下载二维码</button>
+    </div>
+    
+    <!-- Batch generation tab -->
+    <div id="batch-tab" class="tab-content">
+        <div class="form-group">
+            <label for="batch-links">输入多个链接 (每行一个):</label>
+            <textarea id="batch-links" class="batch-links-input" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com" required></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="batch-icons">选择图标 (按顺序点击选择多个):</label>
+            <input type="file" id="batch-icons" accept="image/*" multiple>
+            <div class="batch-icons-container" id="batch-icons-container">
+                <!-- 选中的图标将显示在这里 -->
+            </div>
+            
+            <!-- 缓存图标区域 -->
+            <div id="batch-cached-icons-section" style="display: none; margin-top: 15px;">
+                <label>已保存的图标:</label>
+                <div id="batch-cached-icons-container">
+                    <!-- 缓存的图标将在这里显示 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="batch-bottom-text">底部文字 (可选):</label>
+            <textarea id="batch-bottom-text" placeholder="长按识别二维码"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="batch-text-size">文字大小:</label>
+            <input type="number" id="batch-text-size" min="1" value="14">
+        </div>
+        
+        <div class="form-group">
+            <label for="batch-size">二维码尺寸:</label>
+            <input type="number" id="batch-size" min="100" max="500" value="256">
+        </div>
+        
+        <button onclick="generateBatchQR()">批量生成二维码</button>
+        
+        <div id="batch-results" class="batch-results">
+            <!-- 批量生成的二维码将显示在这里 -->
+        </div>
+        
+        <button class="download-btn batch-download-all" onclick="downloadAllBatchQR()" style="display: none;">下载所有二维码</button>
+    </div>
 </div>
 
 <script>
@@ -530,7 +738,328 @@
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
         displayCachedIcons();
+        displayBatchCachedIcons();
     });
+    
+    // Tab switching functionality
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabName + '-tab').classList.add('active');
+        
+        // Add active class to clicked button
+        event.target.classList.add('active');
+    }
+    
+    // Batch generation functionality
+    let batchSelectedIcons = []; // 存储按顺序选择的图标
+    let batchGeneratedQRs = []; // 存储生成的二维码数据
+    
+    // 处理批量图标文件选择
+    document.getElementById('batch-icons').addEventListener('change', function() {
+        const files = this.files;
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const iconData = e.target.result;
+                    batchSelectedIcons.push({
+                        data: iconData,
+                        name: file.name
+                    });
+                    saveIconToCache(iconData, file.name);
+                    displayBatchSelectedIcons();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+    
+    // 显示批量选中的图标
+    function displayBatchSelectedIcons() {
+        const container = document.getElementById('batch-icons-container');
+        container.innerHTML = '';
+        
+        batchSelectedIcons.forEach((icon, index) => {
+            const iconElement = document.createElement('div');
+            iconElement.className = 'batch-icon-item selected';
+            iconElement.title = icon.name;
+            
+            const img = document.createElement('img');
+            img.src = icon.data;
+            img.alt = icon.name;
+            
+            const orderNumber = document.createElement('div');
+            orderNumber.className = 'batch-icon-order';
+            orderNumber.textContent = index + 1;
+            
+            // 点击删除图标
+            iconElement.addEventListener('click', function() {
+                batchSelectedIcons.splice(index, 1);
+                displayBatchSelectedIcons();
+            });
+            
+            iconElement.appendChild(img);
+            iconElement.appendChild(orderNumber);
+            container.appendChild(iconElement);
+        });
+    }
+    
+    // 显示批量缓存图标
+    function displayBatchCachedIcons() {
+        try {
+            const cachedIcons = JSON.parse(localStorage.getItem('qrcode-cached-icons') || '[]');
+            const container = document.getElementById('batch-cached-icons-container');
+            container.innerHTML = '';
+            
+            if (cachedIcons.length > 0) {
+                document.getElementById('batch-cached-icons-section').style.display = 'block';
+                
+                cachedIcons.forEach(icon => {
+                    const iconElement = createBatchCachedIconElement(icon);
+                    container.appendChild(iconElement);
+                });
+            } else {
+                document.getElementById('batch-cached-icons-section').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('加载批量缓存图标失败:', error);
+        }
+    }
+    
+    // 创建批量缓存图标元素
+    function createBatchCachedIconElement(icon) {
+        const iconItem = document.createElement('div');
+        iconItem.className = 'batch-icon-item';
+        iconItem.title = icon.name;
+        
+        const img = document.createElement('img');
+        img.src = icon.data;
+        img.alt = icon.name;
+        
+        // 点击选择图标
+        iconItem.addEventListener('click', function() {
+            batchSelectedIcons.push({
+                data: icon.data,
+                name: icon.name
+            });
+            displayBatchSelectedIcons();
+        });
+        
+        iconItem.appendChild(img);
+        return iconItem;
+    }
+    
+    // 批量生成二维码
+    function generateBatchQR() {
+        const linksText = document.getElementById('batch-links').value.trim();
+        const text = document.getElementById('batch-bottom-text').value;
+        const textSize = parseInt(document.getElementById('batch-text-size').value);
+        const size = parseInt(document.getElementById('batch-size').value);
+        
+        if (!linksText) {
+            alert('请输入至少一个链接');
+            return;
+        }
+        
+        const links = linksText.split('\n').filter(link => link.trim() !== '');
+        
+        if (links.length === 0) {
+            alert('请输入有效的链接');
+            return;
+        }
+        
+        // 清空之前的结果
+        const resultsContainer = document.getElementById('batch-results');
+        resultsContainer.innerHTML = '';
+        batchGeneratedQRs = [];
+        
+        // 生成每个二维码
+        links.forEach((link, index) => {
+            const qrItem = document.createElement('div');
+            qrItem.className = 'batch-qr-item';
+            
+            const qrDisplay = document.createElement('div');
+            qrDisplay.className = 'batch-qr-display';
+            qrDisplay.style.width = size + 'px';
+            qrDisplay.style.height = size + 'px';
+            qrDisplay.style.position = 'relative';
+            
+            const qrContainer = document.createElement('div');
+            qrContainer.id = `batch-qr-${index}`;
+            qrDisplay.appendChild(qrContainer);
+            
+            const qrInfo = document.createElement('div');
+            qrInfo.className = 'batch-qr-info';
+            
+            const linkDiv = document.createElement('div');
+            linkDiv.className = 'batch-qr-link';
+            linkDiv.textContent = `链接 ${index + 1}: ${link}`;
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'batch-download-btn';
+            downloadBtn.textContent = '下载';
+            downloadBtn.onclick = () => downloadBatchQR(index);
+            
+            qrInfo.appendChild(linkDiv);
+            qrInfo.appendChild(downloadBtn);
+            
+            qrItem.appendChild(qrDisplay);
+            qrItem.appendChild(qrInfo);
+            resultsContainer.appendChild(qrItem);
+            
+            // 生成二维码
+            const qrcode = new QRCode(qrContainer, {
+                text: link.trim(),
+                width: size,
+                height: size,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // 添加图标（如果有的话）
+            const iconData = batchSelectedIcons[index] ? batchSelectedIcons[index].data : null;
+            if (iconData) {
+                setTimeout(() => {
+                    const centerIcon = document.createElement('img');
+                    const logoSize = Math.floor(size * 0.2);
+                    centerIcon.style.position = 'absolute';
+                    centerIcon.style.top = '50%';
+                    centerIcon.style.left = '50%';
+                    centerIcon.style.transform = 'translate(-50%, -50%)';
+                    centerIcon.style.width = logoSize + 'px';
+                    centerIcon.style.height = logoSize + 'px';
+                    centerIcon.style.backgroundColor = 'white';
+                    centerIcon.style.padding = '5px';
+                    centerIcon.style.borderRadius = '4px';
+                    centerIcon.style.zIndex = '10';
+                    centerIcon.src = iconData;
+                    qrDisplay.appendChild(centerIcon);
+                }, 100);
+            }
+            
+            // 生成最终的canvas图像
+            setTimeout(() => {
+                const canvas = createBatchQRCanvas(index, link, iconData, size, text, textSize);
+                batchGeneratedQRs.push({
+                    canvas: canvas,
+                    link: link,
+                    index: index
+                });
+                
+                if (batchGeneratedQRs.length === links.length) {
+                    document.querySelector('.batch-download-all').style.display = 'block';
+                }
+            }, 500);
+        });
+    }
+    
+    // 创建批量二维码canvas
+    function createBatchQRCanvas(index, link, iconData, size, text, textSize) {
+        const padding = 40;
+        const textQrSpacing = 50;
+        const canvas = document.createElement('canvas');
+        
+        // Calculate text height
+        const textLines = text ? text.split('\n') : [];
+        const lineHeight = Math.floor(textSize * 1.5);
+        const textHeight = textLines.length > 0 ? (textLines.length * lineHeight + 20) : 0;
+        
+        canvas.width = size + (padding * 2);
+        canvas.height = size + textHeight + padding + textQrSpacing;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Draw white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw QR code
+        const qrImg = document.querySelector(`#batch-qr-${index} img`);
+        if (qrImg) {
+            ctx.drawImage(qrImg, padding, padding, size, size);
+            
+            // Draw center icon if exists
+            if (iconData) {
+                const logoSize = Math.floor(size * 0.2);
+                const centerX = padding + size / 2 - logoSize / 2;
+                const centerY = padding + size / 2 - logoSize / 2;
+                
+                // Draw white background for icon
+                ctx.fillStyle = 'white';
+                ctx.fillRect(centerX - 5, centerY - 5, logoSize + 10, logoSize + 10);
+                
+                // Draw icon
+                const iconImg = new Image();
+                iconImg.onload = function() {
+                    ctx.drawImage(iconImg, centerX, centerY, logoSize, logoSize);
+                };
+                iconImg.src = iconData;
+            }
+            
+            // Draw text
+            if (text) {
+                ctx.font = `${textSize}px Arial`;
+                ctx.textAlign = 'center';
+                
+                const maxTextWidth = textLines.reduce((max, line) => {
+                    const width = ctx.measureText(line).width;
+                    return width > max ? width : max;
+                }, 0);
+                const textBackgroundWidth = maxTextWidth + 40;
+                const textBackgroundHeight = textLines.length * lineHeight + 20;
+                const textBackgroundX = (canvas.width - textBackgroundWidth) / 2;
+                const textBackgroundY = size + padding + textQrSpacing;
+                
+                // Draw text background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(textBackgroundX, textBackgroundY, textBackgroundWidth, textBackgroundHeight);
+                
+                // Draw text lines
+                ctx.fillStyle = 'black';
+                textLines.forEach((line, lineIndex) => {
+                    const y = textBackgroundY + 15 + (lineIndex * lineHeight);
+                    ctx.fillText(line, canvas.width / 2, y);
+                });
+            }
+        }
+        
+        return canvas;
+    }
+    
+    // 下载单个批量二维码
+    function downloadBatchQR(index) {
+        const qrData = batchGeneratedQRs.find(qr => qr.index === index);
+        if (qrData) {
+            const link = document.createElement('a');
+            link.download = `qrcode_${index + 1}.png`;
+            link.href = qrData.canvas.toDataURL('image/png');
+            link.click();
+        }
+    }
+    
+    // 下载所有批量二维码
+    function downloadAllBatchQR() {
+        batchGeneratedQRs.forEach((qrData, index) => {
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.download = `qrcode_${qrData.index + 1}.png`;
+                link.href = qrData.canvas.toDataURL('image/png');
+                link.click();
+            }, index * 200); // 延迟下载以避免浏览器阻止
+        });
+    }
 </script>
 </body>
 </html>
